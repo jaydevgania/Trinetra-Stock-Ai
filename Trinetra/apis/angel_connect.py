@@ -9,20 +9,18 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 
-# ── YOUR CREDENTIALS (fill these in) ─────────────────────────
-API_KEY    = "QSO7H5TP"
-CLIENT_ID  = "J57403939"
-PASSWORD   = "2006"
-TOTP_TOKEN = "WCMSMLUAFVVWILNK5EV7FWGJTM"
+# YOUR CREDENTIALS  
+─────────────────────────
 
-# ── Instrument Tokens ─────────────────────────────────────────
+
+# Instrument Tokens ─────────────────────────────────────────
 TOKENS = {
     "NIFTY50":   {"symbol": "NIFTY 50",   "token": "99926000", "exchange": "NSE"},
     "BANKNIFTY": {"symbol": "NIFTY BANK", "token": "99926009", "exchange": "NSE"},
     "SENSEX":    {"symbol": "SENSEX",     "token": "99919000", "exchange": "BSE"},
 }
 
-# ── Connect ───────────────────────────────────────────────────
+# Connect ───────────────────────────────────────────────────
 def connect():
     try:
         obj  = SmartConnect(api_key=API_KEY)
@@ -40,7 +38,7 @@ def connect():
         print(f"❌ Error: {e}")
         return None
 
-# ── Get Live Price ────────────────────────────────────────────
+# Get Live Price ────────────────────────────────────────────
 def get_live_price(obj, exchange, symbol, token):
     try:
         data  = obj.ltpData(exchange, symbol, token)
@@ -51,7 +49,7 @@ def get_live_price(obj, exchange, symbol, token):
         print(f"❌ Error fetching {symbol}: {e}")
         return None
 
-# ── Get All Live Prices ───────────────────────────────────────
+# Get All Live Prices ───────────────────────────────────────
 def get_all_live_prices(obj):
     prices = {}
     for name, info in TOKENS.items():
@@ -59,7 +57,7 @@ def get_all_live_prices(obj):
         prices[name] = price
     return prices
 
-# ── Get Historical Candles in Chunks ─────────────────────────
+# Get Historical Candles in Chunks ─────────────────────────
 # Angel API limit: max ~400 candles per request for 5-min data
 # We fetch in 30-day chunks to get full 2 years of data
 
@@ -108,7 +106,7 @@ def get_historical(obj, token, name, interval="FIVE_MINUTE", days=2555):
     print(f"✅ {name}: {len(df)} total candles saved → {os.path.join(DATA_DIR, f'{name}_historical.csv')}")
     return df
 
-# ── Get historical using yfinance as backup for older data ───
+#   Get historical using yfinance as backup for older data ───
 def get_historical_full(obj, token, name, yf_symbol, exchange="NSE"):
     """
     Smart fetch strategy:
@@ -126,7 +124,7 @@ def get_historical_full(obj, token, name, yf_symbol, exchange="NSE"):
 
     all_candles = []
 
-    # ── Part 1: Angel API — recent 5-min data ────────────────
+    #  Part 1: Angel API — recent 5-min data ────────────────
     print(f"\n[1/2] Fetching 5-min candles from Angel One (10 years)...")
     to_date    = datetime.now()
     from_date  = to_date - timedelta(days=3650)  # 10 years of 5-min data
@@ -162,7 +160,7 @@ def get_historical_full(obj, token, name, yf_symbol, exchange="NSE"):
         df_5min = pd.DataFrame()
         print("   ⚠️  No 5-min data fetched")
 
-    # ── Part 2: yfinance — older daily data (7 years) ────────
+    #   Part 2: yfinance — older daily data (7 years) ────────
     print(f"\n[2/2] Fetching daily candles from yfinance (7 years)...")
     try:
         df_daily = yf.download(yf_symbol, period="7y", interval="1d", progress=False)
@@ -186,7 +184,7 @@ def get_historical_full(obj, token, name, yf_symbol, exchange="NSE"):
         print(f"   ⚠️  yfinance error: {e}")
         df_daily = pd.DataFrame()
 
-    # ── Combine: Use daily for old data, 5-min for recent ────
+    #   Combine: Use daily for old data, 5-min for recent ────
     if len(df_5min) > 0 and len(df_daily) > 0:
         # Get cutoff: oldest 5-min date
         cutoff = df_5min['date'].min()
@@ -197,7 +195,7 @@ def get_historical_full(obj, token, name, yf_symbol, exchange="NSE"):
         df_combined = df_combined.drop_duplicates(subset=['date'])
         df_combined = df_combined.sort_values('date').reset_index(drop=True)
         print(f"\n✅ Combined: {len(df_old)} daily + {len(df_5min)} 5-min = {len(df_combined)} total candles")
-    elif len(df_5min) > 0:
+    elif len(df_5min) >
         df_combined = df_5min
     elif len(df_daily) > 0:
         df_combined = df_daily
@@ -212,7 +210,7 @@ def get_historical_full(obj, token, name, yf_symbol, exchange="NSE"):
     return df_combined
 
 
-# ── Main ──────────────────────────────────────────────────────
+# Main ──────────────────────────────────────────────────────
 if __name__ == "__main__":
     obj = connect()
     if obj:
